@@ -16,15 +16,16 @@ router.get('/', async (req,res)=>{
 })
 
 // getting one subscriber
-router.get('/:id', (req,res)=>{
+router.get('/:id', getSubscriber,(req,res)=>{
+    res.json(res.subscriber)
 
-    res.send(req.params.id)
+    // res.send(res.subscriber.name) // get name of subscriber
     // res.json(subscribers)
 })
 
 //create 
 
-router.post('/', async (req,res)=>{
+router.post('/',async (req,res)=>{
     const subscriber = new Subscriber({
         name: req.body.name,
         subscribedToChannel: req.body.subscribedToChannel
@@ -42,16 +43,33 @@ router.post('/', async (req,res)=>{
     
 })
 //updating
-router.patch('/', (req,res)=>{
+router.patch('/:id', getSubscriber, async  (req,res)=>{
+    if(req.body.name != null){
+        res.subscriber.name = req.body.name
+    }
+    if(req.body.subscribedToChannel != null){
+        res.subscribedToChannel = req.body.subscribedToChannel
+    }
+    try{
+        const updatedSubscriber = await  res.subscriber.save()
+        res.json(updatedSubscriber)
+    } catch(er){
+        res.status(400).json({message:err.message})
 
-    
+    }
 })
 
 //delete
-router.delete('/:id', (req,res)=>{
-
-    
+router.delete('/:id',getSubscriber, async (req,res)=>{
+    try {
+        await res.subscriber.deleteOne()
+        res.json({message : 'deleted subscriber'})
+    } catch (err){
+        res.status(500).json({message: err.message})
+    } 
 })
+
+
 async function getSubscriber(req,res, next ) {
     let subscriber
     try {
@@ -60,9 +78,13 @@ async function getSubscriber(req,res, next ) {
         return res.status(404).json({message: 'Cannot find subscriber'}) //cant find 
     }
 
-} catch{
+} catch (err){
+    return res.status(500).json({messsage : err.message})
 
 }
+
+res.subscriber  = subscriber
+next() // move on to the next part of the request or middleware
 }
 
 
